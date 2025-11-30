@@ -1,0 +1,92 @@
+// Prisma Schema for Careers Page Builder
+// This defines our database structure
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+// Company - Each company using the ATS platform
+model Company {
+  id          String   @id @default(uuid())
+  slug        String   @unique // URL-friendly identifier (e.g., "google", "facebook")
+  name        String
+  logoUrl     String?  @map("logo_url")
+  bannerUrl   String?  @map("banner_url")
+  videoUrl    String?  @map("video_url") // Culture video
+  themeColor  String?  @map("theme_color") // Hex color for branding
+  description String?  @db.Text // Company description
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  users        User[]
+  jobs         Job[]
+  pageSections PageSection[]
+
+  @@map("companies")
+}
+
+// User - Recruiters who manage company careers pages
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  companyId    String   @map("company_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+// Job - Job postings for each company
+model Job {
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
+  title       String
+  description String   @db.Text
+  location    String
+  jobType     String   @map("job_type") // Full-time, Part-time, Remote, Contract, etc.
+  department  String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([jobType])
+  @@index([location])
+  @@map("jobs")
+}
+
+// PageSection - Customizable sections on the careers page
+model PageSection {
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
+  sectionType String   @map("section_type") // about_us, life_at_company, benefits, values, etc.
+  title       String
+  content     String   @db.Text // JSON or HTML content
+  order       Int      @default(0) // For ordering sections
+  isVisible   Boolean  @default(true) @map("is_visible")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relationships
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("page_sections")
+}
